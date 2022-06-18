@@ -8,22 +8,18 @@ namespace JwtAuth
     public class JwtTokenManager
     {
         private readonly string _key;
-
-        private readonly List<User> _users = new()
-        {
-            new User {UserName = "srinivas", Password = "myTestPassword", Role = "Admin"},
-            new User {UserName = "prasad", Password = "myTestPassword", Role = "user"}
-        };
+        private readonly IEnumerable<User> _users;
 
         public JwtTokenManager(string key)
         {
             _key = key;
+            _users = UserList.AllUsers;
         }
 
         public string Authenticate(UserRequest user)
         {
-
-            if (!_users.Any(x => x.UserName == user.UserName && x.Password == user.Password)) return string.Empty;
+            var authUser = _users.SingleOrDefault(x => x.UserName == user.UserName && x.Password == user.Password);
+            if (authUser is null) return string.Empty;
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var tokenKey = Encoding.ASCII.GetBytes(_key);
@@ -31,8 +27,8 @@ namespace JwtAuth
             {
                 Subject = new ClaimsIdentity(new List<Claim>
                 {
-                    new(ClaimTypes.Name, user.UserName),
-                    new(ClaimTypes.Role, _users.First(x => x.UserName == user.UserName).Role),
+                    new(ClaimTypes.Name, authUser.UserName),
+                    new(ClaimTypes.Role, authUser.Role),
                 }),
                 Expires = DateTime.Now.AddHours(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey),
