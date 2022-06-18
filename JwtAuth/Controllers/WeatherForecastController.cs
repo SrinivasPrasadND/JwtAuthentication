@@ -9,8 +9,7 @@ namespace JwtAuth.Controllers
     {
         private readonly JwtTokenManager _jwtTokenManager;
 
-        private static readonly string[] Summaries = new[]
-        {
+        private static readonly string[] Summaries = {
             "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
         };
 
@@ -39,9 +38,23 @@ namespace JwtAuth.Controllers
         [HttpPost("Authenticate")]
         public IActionResult Authenticate([FromBody] UserRequest user)
         {
+            if (string.IsNullOrEmpty(user.UserName) || string.IsNullOrEmpty(user.Password))
+            {
+                _logger.LogError("invalid user request");
+                return BadRequest(user);
+            }
             var token = _jwtTokenManager.Authenticate(user);
-            if (string.IsNullOrEmpty(token)) return Unauthorized();
+            if (string.IsNullOrEmpty(token))
+            {
+                _logger.LogError("Unauthorized user access");
+                return Unauthorized();
+            }
             return Ok(new JsonResult(new {token}));
         }
+
+        [Authorize(Roles = "HRManager,Finance")]
+        [HttpGet(Name = "GetRoleContext")]
+        public IActionResult Payslip() =>
+            Content("HRManager || Finance");
     }
 }
