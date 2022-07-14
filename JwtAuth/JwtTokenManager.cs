@@ -9,11 +9,14 @@ namespace JwtAuth
     {
         private readonly string _key;
         private readonly IEnumerable<User> _users;
+        private readonly IConfiguration _configuration;
 
-        public JwtTokenManager(string key)
+        public JwtTokenManager(IConfiguration configuration)
         {
-            _key = key;
+            _key = configuration["JWT:Secret"];
             _users = UserList.AllUsers;
+            _configuration = configuration;
+            _configuration = configuration;
         }
 
         public string Authenticate(UserRequest user)
@@ -37,6 +40,21 @@ namespace JwtAuth
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
+        }
+
+        public JwtSecurityToken GetToken(List<Claim> authClaims)
+        {
+            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key));
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["JWT:ValidIssuer"],
+                audience: _configuration["JWT:ValidAudience"],
+                expires: DateTime.Now.AddHours(3),
+                claims: authClaims,
+                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+                );
+
+            return token;
         }
     }
 }
